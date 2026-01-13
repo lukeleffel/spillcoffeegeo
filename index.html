@@ -1,0 +1,2222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="apple-touch-icon" href="s.png">
+    <link rel="icon" href="s.png">
+    <link rel="manifest" href="manifest.json">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spill Coffee Map - Independent Cafe Culture</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --retro-pink: #FF6B9D;
+            --retro-blue: #4A90E2;
+            --retro-purple: #9B59B6;
+            --cream: #FFF8E7;
+            --dark: #2C2C2C;
+            --black: #1A1A1A;
+            --accent-orange: #FFB347;
+            --accent-teal: #20B2AA;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Space Mono', monospace;
+            background: linear-gradient(135deg, #4A90E2 0%, #9B59B6 50%, #FF6B9D 100%);
+            color: var(--dark);
+            line-height: 1.6;
+            overflow: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.03;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.03),
+                rgba(0, 0, 0, 0.03) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            z-index: 9999;
+            animation: scanlines 8s linear infinite;
+        }
+        
+        @keyframes scanlines {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(10px); }
+        }
+
+        .typewriter {
+            overflow: hidden;
+            border-right: 2px solid var(--dark);
+            white-space: nowrap;
+            animation: typing-repeat 10s steps(40, end) infinite, blink-caret 0.75s step-end infinite;
+            width: 0;
+        }
+
+        @keyframes typing-repeat {
+            0% { width: 0; }
+            25% { width: 100%; }
+            100% { width: 100%; }
+        }
+
+        @keyframes blink-caret {
+            from, to { border-color: transparent; }
+            50% { border-color: var(--dark); }
+        }
+        
+        .app-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background: rgba(255, 248, 231, 0.98);
+            border-bottom: 4px solid var(--dark);
+            padding: 16px 32px;
+            position: relative;
+            box-shadow: 0 6px 0 rgba(0, 0, 0, 0.2);
+        }
+        
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 40px;
+        }
+        
+        .logo-title {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .logo-tagline {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .logo-title h1 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 42px;
+            font-weight: 400;
+            letter-spacing: 0.05em;
+            line-height: 1;
+            margin-bottom: 0;
+            background: linear-gradient(135deg, var(--retro-blue), var(--retro-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: inline;
+        }
+        
+        .logo-tagline p {
+            font-size: 11px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--dark);
+            font-weight: 700;
+            margin: 0;
+            display: inline-block;
+        }
+        
+        .logo-tagline .typewriter {
+            border-right: 2px solid var(--dark);
+        }
+        
+        .header-meta {
+            text-align: center;
+            font-size: 11px;
+            color: var(--dark);
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 6px;
+            width: 100%;
+        }
+        
+        .stats-row {
+            display: flex;
+            gap: 40px;
+            align-items: baseline;
+            justify-content: space-between;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            padding: 6px 10px;
+            border: 2px dashed rgba(255, 107, 157, 0.5);
+            flex: 1;
+        }
+        
+        .stat-item:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px solid var(--dark);
+            transform: translateY(-2px);
+        }
+        
+        .stat-item.active {
+            background: rgba(255, 107, 157, 0.2);
+            border: 2px solid var(--retro-pink);
+        }
+        
+        .header-meta .count {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 32px;
+            font-weight: 400;
+            letter-spacing: 0.05em;
+            background: linear-gradient(135deg, var(--retro-pink), var(--accent-orange));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: block;
+            line-height: 1;
+            margin-bottom: 2px;
+        }
+        
+        .header-meta .count.network {
+            font-size: 32px;
+            background: var(--retro-pink);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .view-toggle {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .view-btn {
+            padding: 8px 16px;
+            background: white;
+            border: 3px solid var(--dark);
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+        }
+        
+        .view-btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.2);
+        }
+        
+        .view-btn.active {
+            background: var(--retro-pink);
+            color: white;
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        #map {
+            flex: 1;
+            position: relative;
+        }
+        
+        /* My Location Button */
+        .location-button {
+            position: absolute;
+            bottom: 120px;
+            left: 20px;
+            z-index: 1000;
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 248, 231, 0.98);
+            border: 3px solid var(--dark);
+            box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            backdrop-filter: blur(10px);
+        }
+        
+        .location-button:hover {
+            background: var(--retro-blue);
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.3);
+        }
+        
+        .location-button:hover svg {
+            fill: white;
+        }
+        
+        .location-button.active {
+            background: var(--retro-blue);
+        }
+        
+        .location-button.active svg {
+            fill: white;
+        }
+        
+        .location-button svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--dark);
+            transition: fill 0.2s;
+        }
+        
+        /* User Location Marker */
+        .user-location-marker {
+            width: 16px;
+            height: 16px;
+            background: var(--retro-blue);
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(74, 144, 226, 0.6), 0 0 0 3px var(--dark);
+            animation: pulse-location 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-location {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
+        }
+        
+        .sidebar {
+            width: 400px;
+            background: rgba(255, 248, 231, 0.95);
+            border-right: 4px solid var(--dark);
+            overflow-y: auto;
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+        
+        .sidebar::-webkit-scrollbar {
+            width: 12px;
+        }
+        
+        .sidebar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--retro-pink);
+            border: 2px solid var(--dark);
+        }
+        
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 3px solid var(--dark);
+            position: sticky;
+            top: 0;
+            background: rgba(255, 248, 231, 0.98);
+            z-index: 10;
+            backdrop-filter: blur(10px);
+        }
+        
+        .search-box {
+            width: 100%;
+            padding: 14px 18px;
+            border: 3px solid var(--dark);
+            background: white;
+            font-family: 'Space Mono', monospace;
+            font-size: 14px;
+            color: var(--dark);
+            font-weight: 700;
+            box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+        }
+        
+        .search-box:focus {
+            outline: none;
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.2);
+            background: var(--cream);
+        }
+        
+        .search-box::placeholder {
+            color: rgba(44, 44, 44, 0.5);
+        }
+        
+        .shop-card {
+            padding: 20px 24px;
+            border-bottom: 2px dashed rgba(44, 44, 44, 0.2);
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            background: transparent;
+        }
+        
+        .section-header {
+            padding: 16px 24px;
+            border-bottom: 3px solid var(--dark);
+            position: sticky;
+            background: rgba(255, 248, 231, 0.98);
+            z-index: 5;
+            backdrop-filter: blur(10px);
+        }
+        
+        .state-header {
+            top: 0;
+            z-index: 6;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+            background: white;
+            border-bottom: 4px solid var(--dark);
+            box-shadow: 0 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        
+        .state-header:hover {
+            background: rgba(255, 255, 255, 0.95);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.15);
+        }
+        
+        .state-header.expanded {
+            background: rgba(255, 255, 255, 0.98);
+        }
+        
+        .state-header h3 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 32px;
+            font-weight: 400;
+            letter-spacing: 0.08em;
+            margin: 0;
+            background: linear-gradient(135deg, var(--retro-blue), var(--retro-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        .state-count {
+            font-size: 18px;
+            opacity: 0.7;
+            margin-left: 12px;
+        }
+        
+        .state-cities {
+            background: rgba(255, 248, 231, 0.5);
+        }
+        
+        .city-header {
+            padding: 14px 24px;
+            background: rgba(255, 248, 231, 0.85);
+            border-bottom: 2px solid rgba(44, 44, 44, 0.2);
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+            border-left: 4px solid transparent;
+        }
+        
+        .city-header.collapsible {
+            position: relative;
+        }
+        
+        .city-header:hover {
+            background: rgba(255, 248, 231, 0.95);
+            border-left: 4px solid var(--retro-pink);
+        }
+        
+        .city-header.expanded {
+            background: rgba(255, 248, 231, 1);
+            border-left: 4px solid var(--retro-blue);
+        }
+        
+        .city-header h4 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 24px;
+            font-weight: 400;
+            margin: 0;
+            color: var(--dark);
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        .expand-icon {
+            font-size: 16px;
+            transition: transform 0.2s;
+            color: var(--retro-pink);
+            font-weight: 400;
+        }
+        
+        .city-cafes {
+            background: rgba(255, 248, 231, 0.5);
+        }
+        
+        .shop-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 6px;
+            height: 100%;
+            background: linear-gradient(180deg, var(--retro-pink), var(--retro-blue));
+            transform: scaleY(0);
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
+        .shop-card:hover {
+            background: rgba(255, 255, 255, 0.6);
+            transform: translateX(4px);
+        }
+        
+        .shop-card:hover::before {
+            transform: scaleY(1);
+        }
+        
+        .shop-card.active {
+            background: rgba(255, 107, 157, 0.15);
+            border-left: 6px solid var(--retro-pink);
+        }
+        
+        .spill-badge {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            opacity: 0.9;
+        }
+        
+        .shop-name {
+            font-family: 'Lora', serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+        
+        .shop-address {
+            font-size: 12px;
+            color: var(--dark);
+            margin-bottom: 10px;
+            line-height: 1.6;
+            opacity: 0.8;
+        }
+        
+        .shop-hours {
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            padding: 4px 10px;
+            display: inline-block;
+            border: 2px solid var(--dark);
+            background: rgba(255, 255, 255, 0.6);
+            letter-spacing: 0.05em;
+        }
+        
+        .shop-hours.open {
+            color: var(--accent-teal);
+            border-color: var(--accent-teal);
+            background: rgba(32, 178, 170, 0.1);
+        }
+        
+        .shop-hours.closed {
+            color: var(--retro-pink);
+            border-color: var(--retro-pink);
+            background: rgba(255, 107, 157, 0.1);
+        }
+        
+        .shop-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .shop-type {
+            display: inline-block;
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 6px 12px;
+            background: var(--retro-pink);
+            color: white;
+            font-weight: 700;
+            box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.2);
+            border: 2px solid var(--dark);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        
+        .shop-type:hover {
+            background: var(--accent-orange);
+            transform: translate(-2px, -2px);
+            box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.2);
+        }
+        
+        .shop-type.no-link {
+            cursor: default;
+        }
+        
+        .shop-type.no-link:hover {
+            background: var(--retro-pink);
+            transform: none;
+            box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.2);
+        }
+        
+        .instagram-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #833AB4, #FD1D1D, #F77737);
+            border: 2px solid var(--dark);
+            box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        
+        .instagram-link:hover {
+            transform: translate(-2px, -2px) scale(1.1);
+            box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.2);
+        }
+        
+        .instagram-link svg {
+            width: 16px;
+            height: 16px;
+            fill: white;
+        }
+        
+        .loading-message {
+            padding: 40px 24px;
+            text-align: center;
+            font-size: 14px;
+            color: var(--dark);
+            opacity: 0.6;
+        }
+        
+        .error-message {
+            padding: 40px 24px;
+            text-align: center;
+            font-size: 14px;
+            color: var(--retro-pink);
+            font-weight: 700;
+        }
+        
+        #listView {
+            flex: 1;
+            background: rgba(255, 248, 231, 0.95);
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #listContent {
+            flex: 1;
+        }
+        
+        #listView .sidebar-header {
+            background: rgba(255, 248, 231, 0.98);
+            backdrop-filter: blur(10px);
+        }
+        
+        #aboutView {
+            flex: 1;
+            background: rgba(255, 248, 231, 0.95);
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #aboutContent {
+            flex: 1;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        #aboutContent::-webkit-scrollbar {
+            width: 12px;
+        }
+        
+        #aboutContent::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        #aboutContent::-webkit-scrollbar-thumb {
+            background: var(--retro-pink);
+            border: 2px solid var(--dark);
+        }
+        
+        #joinView {
+            flex: 1;
+            background: rgba(255, 248, 231, 0.95);
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #joinContent {
+            flex: 1;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        #joinContent::-webkit-scrollbar {
+            width: 12px;
+        }
+        
+        #joinContent::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        #joinContent::-webkit-scrollbar-thumb {
+            background: var(--retro-pink);
+            border: 2px solid var(--dark);
+        }
+        
+        .about-section {
+            padding: 20px 24px;
+            border-bottom: 2px dashed rgba(44, 44, 44, 0.2);
+            animation: slideInRight 0.4s ease-out backwards;
+        }
+        
+        .about-section:nth-child(1) { animation-delay: 0.05s; }
+        .about-section:nth-child(2) { animation-delay: 0.1s; }
+        .about-section:nth-child(3) { animation-delay: 0.15s; }
+        .about-section:nth-child(4) { animation-delay: 0.2s; }
+        .about-section:nth-child(5) { animation-delay: 0.25s; }
+        
+        .about-section h2 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 32px;
+            font-weight: 400;
+            letter-spacing: 0.05em;
+            background: linear-gradient(135deg, var(--retro-blue), var(--retro-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 16px;
+        }
+        
+        .about-section p {
+            font-size: 14px;
+            line-height: 1.8;
+            color: var(--dark);
+            margin-bottom: 12px;
+        }
+        
+        .about-section a {
+            color: var(--retro-blue);
+            font-weight: 700;
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .about-section a:hover {
+            color: var(--retro-pink);
+            border-bottom: 2px solid var(--retro-pink);
+        }
+        
+        .leaflet-popup-content-wrapper {
+            background: rgba(255, 248, 231, 0.98);
+            border: 4px solid var(--dark);
+            border-radius: 0;
+            box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.3);
+            font-family: 'Space Mono', monospace;
+            backdrop-filter: blur(10px);
+        }
+        
+        .leaflet-popup-tip {
+            display: none;
+        }
+        
+        .custom-tooltip {
+            background: rgba(255, 248, 231, 0.98);
+            border: 3px solid var(--dark);
+            border-radius: 0;
+            box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+            font-family: 'Space Mono', monospace;
+            font-weight: 700;
+            font-size: 12px;
+            padding: 6px 12px;
+            color: var(--dark);
+            backdrop-filter: blur(10px);
+        }
+        
+        .custom-tooltip::before {
+            display: none;
+        }
+        
+        .leaflet-tooltip-top::before {
+            display: none;
+        }
+        
+        .popup-content {
+            padding: 4px;
+        }
+        
+        .popup-title {
+            font-family: 'Lora', serif;
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 6px;
+            color: var(--dark);
+            line-height: 1.3;
+        }
+        
+        .popup-address {
+            font-size: 12px;
+            color: var(--dark);
+            margin-bottom: 8px;
+            opacity: 0.8;
+        }
+        
+        .popup-content .shop-hours {
+            margin-bottom: 12px;
+            font-size: 10px;
+        }
+        
+        .popup-meta {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .popup-type {
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            display: inline-block;
+            padding: 4px 10px;
+            background: var(--retro-pink);
+            color: white;
+            font-weight: 700;
+            border: 2px solid var(--dark);
+            box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        
+        .popup-type:hover {
+            background: var(--accent-orange);
+            transform: translate(-1px, -1px);
+            box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.2);
+        }
+        
+        .directions-buttons {
+            display: inline-flex;
+            gap: 6px;
+            margin-left: 8px;
+        }
+        
+        .dir-btn {
+            display: inline-block;
+            padding: 4px 8px;
+            text-align: center;
+            text-decoration: none;
+            border: 2px solid var(--dark);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            color: var(--dark);
+            background: white;
+            box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
+        }
+        
+        .dir-btn:hover {
+            background: var(--retro-pink);
+            color: white;
+            transform: translate(-1px, -1px);
+            box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.2);
+        }
+        
+        .custom-marker {
+            position: relative;
+            width: 36px;
+            height: 36px;
+            background: white;
+            border: 3px solid var(--dark);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 400;
+            font-family: 'Bebas Neue', sans-serif;
+            letter-spacing: 0.05em;
+            box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.3);
+            transition: all 0.2s;
+            cursor: pointer;
+            opacity: 0.9;
+        }
+        
+        .custom-marker::after {
+            content: '';
+            position: absolute;
+            bottom: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 12px solid var(--dark);
+        }
+        
+        .custom-marker.black {
+            background: var(--black);
+            color: white;
+        }
+        
+        .custom-marker.black::after {
+            border-top-color: var(--dark);
+        }
+        
+        .custom-marker.gradient {
+            background: linear-gradient(135deg, var(--retro-pink), var(--retro-blue));
+            color: white;
+        }
+        
+        .custom-marker.gradient::after {
+            border-top-color: var(--dark);
+        }
+        
+        .custom-marker:hover,
+        .custom-marker.highlight {
+            transform: scale(1.3);
+            box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.4);
+            opacity: 1;
+            z-index: 1000 !important;
+        }
+        
+        .footer-credit {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .footer-credit .sponsors-label {
+            font-size: 8px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--dark);
+            background: rgba(255, 248, 231, 0.95);
+            padding: 6px 10px;
+            border: 3px solid var(--dark);
+            box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            white-space: nowrap;
+        }
+        
+        .footer-credit .sponsors-list {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        
+        .footer-credit .sponsor-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 10px;
+            background: rgba(255, 248, 231, 0.95);
+            border: 3px solid var(--dark);
+            box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.4);
+            text-decoration: none;
+            transition: all 0.2s;
+            font-size: 8px;
+            font-weight: 700;
+            color: var(--dark);
+            letter-spacing: 0.05em;
+            backdrop-filter: blur(10px);
+        }
+        
+        .footer-credit .sponsor-item:hover {
+            background: var(--retro-pink);
+            color: white;
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.4);
+        }
+        
+        .footer-credit .sponsor-logo {
+            height: 12px;
+            width: auto;
+            object-fit: contain;
+        }
+        
+        .map-search-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 0;
+        }
+        
+        .map-search-toggle {
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 248, 231, 0.98);
+            border: 3px solid var(--dark);
+            box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            backdrop-filter: blur(10px);
+        }
+        
+        .map-search-toggle:hover {
+            background: var(--retro-pink);
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.3);
+        }
+        
+        .map-search-toggle:hover svg {
+            fill: white;
+        }
+        
+        .map-search-toggle svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--dark);
+            transition: fill 0.2s;
+        }
+        
+        .map-search-input {
+            width: 0;
+            padding: 0;
+            border: 3px solid var(--dark);
+            border-left: none;
+            background: rgba(255, 248, 231, 0.98);
+            font-family: 'Space Mono', monospace;
+            font-size: 14px;
+            color: var(--dark);
+            font-weight: 700;
+            box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+            transition: all 0.3s;
+            opacity: 0;
+            backdrop-filter: blur(10px);
+        }
+        
+        .map-search-input.active {
+            width: 280px;
+            padding: 11px 16px;
+            opacity: 1;
+        }
+        
+        .map-search-input:focus {
+            outline: none;
+            background: var(--cream);
+        }
+        
+        .map-search-input::placeholder {
+            color: rgba(44, 44, 44, 0.5);
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                max-height: 40vh;
+                border-right: none;
+                border-bottom: 4px solid var(--dark);
+            }
+            
+            header {
+                padding: 12px 16px;
+            }
+            
+            .header-content {
+                gap: 12px;
+            }
+            
+            .logo {
+                flex-direction: column;
+                gap: 8px;
+                align-items: center;
+            }
+            
+            .logo-title h1 {
+                font-size: 28px;
+            }
+            
+            .logo-tagline p {
+                font-size: 9px;
+            }
+            
+            .header-meta {
+                width: 100%;
+            }
+            
+            .stats-row {
+                width: 100%;
+                justify-content: center;
+                gap: 12px;
+            }
+            
+            .stat-item {
+                flex: 1;
+                padding: 8px;
+            }
+            
+            .header-meta .count {
+                font-size: 24px;
+            }
+            
+            .header-meta .count.network {
+                font-size: 24px;
+            }
+            
+            .stat-item div {
+                font-size: 8px;
+            }
+            
+            .view-toggle {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .view-btn {
+                flex: 1;
+                padding: 10px 8px;
+                font-size: 10px;
+            }
+            
+            .footer-credit {
+                position: relative;
+                bottom: auto;
+                right: auto;
+                margin: 16px;
+                flex-direction: row;
+                align-items: center;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .footer-credit .sponsors-label {
+                font-size: 7px;
+                padding: 4px 8px;
+            }
+            
+            .footer-credit .sponsor-item {
+                font-size: 7px;
+                padding: 4px 8px;
+            }
+            
+            #aboutContent, #joinContent {
+                padding: 24px 20px;
+            }
+            
+            .location-button {
+                bottom: 80px;
+            }
+        }
+        
+        @keyframes slideInRight {
+            from { 
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .shop-card {
+            animation: slideInRight 0.4s ease-out backwards;
+        }
+        
+        .shop-card:nth-child(1) { animation-delay: 0.05s; }
+        .shop-card:nth-child(2) { animation-delay: 0.1s; }
+        .shop-card:nth-child(3) { animation-delay: 0.15s; }
+        .shop-card:nth-child(4) { animation-delay: 0.2s; }
+        .shop-card:nth-child(5) { animation-delay: 0.25s; }
+        .shop-card:nth-child(6) { animation-delay: 0.3s; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-title">
+                        <h1>Spill Coffee Map</h1>
+                    </div>
+                    <div class="logo-tagline">
+                        <p class="typewriter">Get Independent Coffee Everywhere</p>
+                    </div>
+                </div>
+                <div class="header-meta">
+                    <div class="stats-row">
+                        <div class="stat-item" data-filter="partner">
+                            <span class="count network" id="networkCount">—</span>
+                            <div>PARTNER CAFES</div>
+                        </div>
+                        <div class="stat-item active" data-filter="all">
+                            <span class="count" id="shopCount">—</span>
+                            <div>TOTAL INDEPENDENT SHOPS</div>
+                        </div>
+                    </div>
+                    <div class="view-toggle">
+                        <button class="view-btn" data-view="list">LIST</button>
+                        <button class="view-btn active" data-view="map">MAP</button>
+                        <button class="view-btn" data-view="about">ABOUT</button>
+                        <button class="view-btn" data-view="join">JOIN</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div id="map">
+                <div class="map-search-container">
+                    <div class="map-search-toggle" id="mapSearchToggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                        </svg>
+                    </div>
+                    <input type="text" class="map-search-input" id="mapSearchInput" placeholder="SEARCH CAFES...">
+                </div>
+                
+                <!-- My Location Button -->
+                <div class="location-button" id="locationButton" title="Go to my location">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+                    </svg>
+                </div>
+            </div>
+            
+            <div id="listView" class="hidden">
+                <div class="sidebar-header" style="position: sticky; top: 0; z-index: 10;">
+                    <input type="text" class="search-box" id="listSearchBox" placeholder="SEARCH CAFES...">
+                </div>
+                <div id="listContent"></div>
+            </div>
+            
+            <div id="aboutView" class="hidden">
+                <div id="aboutContent"></div>
+            </div>
+            
+            <div id="joinView" class="hidden">
+                <div id="joinContent"></div>
+            </div>
+            
+            <div class="footer-credit">
+                <div class="sponsors-label">Supported By</div>
+                <div class="sponsors-list">
+                    <a href="https://www.notneutral.com" target="_blank" rel="noopener noreferrer" class="sponsor-item">
+                        <span>notNeutral</span>
+                    </a>
+                    <a href="https://thirdwavewater.com" target="_blank" rel="noopener noreferrer" class="sponsor-item">
+                        <span>Third Wave Water</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // =============================================================
+        // CSV IMPORT CONFIGURATION
+        // =============================================================
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSmSV7NPuWEwAOauhSt_yhZ_xccnyX5Sux1Xighi_jwZhrSshxVq9shACmv0p8etUB6V9tQ_z4EKiMT/pub?output=csv'
+        
+        let coffeeShops = [];
+        let currentView = 'map';
+        let filterMode = 'all';
+        let markers = [];
+        let map;
+        let userLocationMarker = null;
+        let userLocation = null;
+
+        // =============================================================
+        // GEOLOCATION FUNCTIONS
+        // =============================================================
+        function getUserLocation() {
+            if (!navigator.geolocation) {
+                console.log('Geolocation not supported');
+                return;
+            }
+
+            const locationButton = document.getElementById('locationButton');
+            locationButton.classList.add('active');
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    userLocation = { lat, lng };
+                    
+                    // Store in localStorage
+                    localStorage.setItem('lastMapPosition', JSON.stringify({ lat, lng }));
+                    
+                    // Add/update user location marker
+                    showUserLocation(lat, lng);
+                    
+                    // Center map on user location
+                    map.setView([lat, lng], 13, { animate: true });
+                    
+                    locationButton.classList.remove('active');
+                },
+                (error) => {
+                    console.log('Geolocation error:', error.message);
+                    locationButton.classList.remove('active');
+                    // Fall back to Columbus
+                    if (!userLocation) {
+                        map.setView([39.9833, -83.0167], 12);
+                    }
+                }
+            );
+        }
+
+        function showUserLocation(lat, lng) {
+            if (userLocationMarker) {
+                map.removeLayer(userLocationMarker);
+            }
+            
+            const userIcon = L.divIcon({
+                html: '<div class="user-location-marker"></div>',
+                className: '',
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
+            
+            userLocationMarker = L.marker([lat, lng], { icon: userIcon })
+                .addTo(map)
+                .bindTooltip('You are here', {
+                    permanent: false,
+                    direction: 'top',
+                    offset: [0, -10],
+                    className: 'custom-tooltip'
+                });
+        }
+
+        function initializeMapPosition() {
+            // Try to get last position from localStorage
+            const lastPosition = localStorage.getItem('lastMapPosition');
+            
+            if (lastPosition) {
+                try {
+                    const pos = JSON.parse(lastPosition);
+                    map.setView([pos.lat, pos.lng], 13);
+                    showUserLocation(pos.lat, pos.lng);
+                    userLocation = pos;
+                } catch (e) {
+                    // If parsing fails, try to get user location
+                    tryGetUserLocation();
+                }
+            } else {
+                // No stored position, try to get current location
+                tryGetUserLocation();
+            }
+        }
+
+        function tryGetUserLocation() {
+            if (!navigator.geolocation) {
+                // Geolocation not supported, use Columbus default
+                map.setView([39.9833, -83.0167], 12);
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    userLocation = { lat, lng };
+                    
+                    localStorage.setItem('lastMapPosition', JSON.stringify({ lat, lng }));
+                    showUserLocation(lat, lng);
+                    map.setView([lat, lng], 13);
+                },
+                (error) => {
+                    // User denied or error occurred, use Columbus default
+                    console.log('Geolocation denied or error:', error.message);
+                    map.setView([39.9833, -83.0167], 12);
+                }
+            );
+        }
+
+        // Location button click handler
+        document.getElementById('locationButton').addEventListener('click', getUserLocation);
+
+        // Save map position when user moves map
+        function saveMapPosition() {
+            if (map) {
+                const center = map.getCenter();
+                localStorage.setItem('lastMapPosition', JSON.stringify({
+                    lat: center.lat,
+                    lng: center.lng
+                }));
+            }
+        }
+
+        // =============================================================
+        // CSV PARSING FUNCTIONS
+        // =============================================================
+        function parseCSV(csv) {
+            const lines = csv.split('\n');
+            const headers = lines[0].split(',');
+            const data = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                
+                const values = lines[i].split(',');
+                const obj = {};
+                
+                headers.forEach((header, index) => {
+                    obj[header.trim()] = values[index] ? values[index].trim() : '';
+                });
+                
+                data.push(obj);
+            }
+            
+            return data;
+        }
+
+        function convertToShopFormat(csvRow) {
+            const website = csvRow.website === '__' || !csvRow.website ? null : csvRow.website;
+            const instagram = csvRow.instagram === '__' || !csvRow.instagram ? csvRow.instagram.replace(/__/g, '') : csvRow.instagram;
+            const isPartner = csvRow.isPartner?.toUpperCase() === 'TRUE';
+            
+            let hours = null;
+            if (csvRow.sun_open && csvRow.sun_close) {
+                hours = {
+                    periods: []
+                };
+                
+                const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+                days.forEach((day, index) => {
+                    const openKey = `${day}_open`;
+                    const closeKey = `${day}_close`;
+                    
+                    if (csvRow[openKey] && csvRow[closeKey]) {
+                        hours.periods.push({
+                            open: { day: index, time: csvRow[openKey] },
+                            close: { day: index, time: csvRow[closeKey] }
+                        });
+                    }
+                });
+            }
+            
+            return {
+                name: csvRow.name,
+                address: csvRow.address,
+                city: csvRow.city || '',
+                state: csvRow.state || '',
+                lat: parseFloat(csvRow.lat),
+                lng: parseFloat(csvRow.lng),
+                type: csvRow.type,
+                website: website,
+                instagram: instagram,
+                isPartner: isPartner,
+                initials: csvRow.initials || null,
+                hours: hours
+            };
+        }
+
+        // =============================================================
+        // LOAD DATA FROM CSV
+        // =============================================================
+        async function loadCafeData() {
+            try {
+                const response = await fetch(CSV_URL);
+                const csvText = await response.text();
+                const csvData = parseCSV(csvText);
+                
+                coffeeShops = csvData.map(convertToShopFormat);
+                
+                document.getElementById('shopCount').textContent = coffeeShops.length;
+                const partnerCount = coffeeShops.filter(s => s.isPartner).length;
+                document.getElementById('networkCount').textContent = partnerCount;
+                
+                initializeMap();
+                
+                console.log(`✅ Loaded ${coffeeShops.length} cafes (${partnerCount} partners)`);
+                
+            } catch (error) {
+                console.error('Error loading cafe data:', error);
+                document.getElementById('shopCount').textContent = 'ERROR';
+                document.getElementById('networkCount').textContent = 'ERROR';
+            }
+        }
+
+        // =============================================================
+        // HELPER FUNCTIONS
+        // =============================================================
+        function getInitials(shop) {
+            if (shop.initials) return shop.initials.toUpperCase();
+            
+            const words = shop.name.replace(/—/g, ' ').split(' ');
+            if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
+            return (words[0][0] + words[1][0]).toUpperCase();
+        }
+
+        function getHoursDisplay(shop) {
+            if (!shop.isPartner || !shop.hours) return null;
+            return formatHoursText(shop.hours);
+        }
+        
+        function formatHoursText(openingHours) {
+            if (!openingHours || !openingHours.periods) return null;
+            
+            const now = new Date();
+            const currentDay = now.getDay();
+            const currentTime = now.getHours() * 100 + now.getMinutes();
+            
+            const pluralDays = ['Sundays', 'Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays'];
+            
+            const todaysPeriod = openingHours.periods.find(p => p.open.day === currentDay);
+            
+            if (!todaysPeriod) {
+                let nextDay = (currentDay + 1) % 7;
+                let daysChecked = 0;
+                
+                while (daysChecked < 7) {
+                    const nextPeriod = openingHours.periods.find(p => p.open.day === nextDay);
+                    if (nextPeriod) {
+                        const openTime = formatTime(nextPeriod.open.time);
+                        return {
+                            text: `Opens ${openTime} on ${pluralDays[nextDay]}`,
+                            isOpen: false
+                        };
+                    }
+                    nextDay = (nextDay + 1) % 7;
+                    daysChecked++;
+                }
+                
+                return { text: 'Hours unavailable', isOpen: false };
+            }
+            
+            const openTime = parseInt(todaysPeriod.open.time);
+            const closeTime = todaysPeriod.close ? parseInt(todaysPeriod.close.time) : 2359;
+            
+            const isOpen = currentTime >= openTime && currentTime < closeTime;
+            
+            if (isOpen) {
+                const closingTime = formatTime(todaysPeriod.close.time);
+                return {
+                    text: `Open til ${closingTime} on ${pluralDays[currentDay]}`,
+                    isOpen: true
+                };
+            } else {
+                if (currentTime < openTime) {
+                    const openingTime = formatTime(todaysPeriod.open.time);
+                    return {
+                        text: `Opens ${openingTime} on ${pluralDays[currentDay]}`,
+                        isOpen: false
+                    };
+                } else {
+                    let nextDay = (currentDay + 1) % 7;
+                    let daysChecked = 0;
+                    
+                    while (daysChecked < 7) {
+                        const nextPeriod = openingHours.periods.find(p => p.open.day === nextDay);
+                        if (nextPeriod) {
+                            const openTime = formatTime(nextPeriod.open.time);
+                            return {
+                                text: `Opens ${openTime} on ${pluralDays[nextDay]}`,
+                                isOpen: false
+                            };
+                        }
+                        nextDay = (nextDay + 1) % 7;
+                        daysChecked++;
+                    }
+                }
+            }
+            
+            return { text: 'Hours unavailable', isOpen: false };
+        }
+        
+        function formatTime(timeString) {
+            if (!timeString) return '';
+            const time = timeString.toString().padStart(4, '0');
+            let hours = parseInt(time.substring(0, 2));
+            const minutes = time.substring(2, 4);
+            const ampm = hours >= 12 ? 'pm' : 'am';
+            
+            if (hours === 0) hours = 12;
+            else if (hours > 12) hours -= 12;
+            
+            return minutes === '00' ? `${hours}${ampm}` : `${hours}:${minutes}${ampm}`;
+        }
+
+        // =============================================================
+        // MAP INITIALIZATION
+        // =============================================================
+        function initializeMap() {
+            map = L.map('map', {
+                zoomControl: false
+            }).setView([39.9833, -83.0167], 12);
+
+            L.control.zoom({
+                position: 'bottomleft'
+            }).addTo(map);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap, © CartoDB',
+                maxZoom: 19
+            }).addTo(map);
+
+            // Initialize map position with geolocation
+            initializeMapPosition();
+            
+            // Save position when map is moved
+            map.on('moveend', saveMapPosition);
+
+            createMarkers();
+        }
+
+        function createMarkers() {
+            coffeeShops.forEach((shop, index) => {
+                const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(shop.address)}`;
+                const appleMapsUrl = `https://maps.apple.com/?daddr=${encodeURIComponent(shop.address)}`;
+                const initials = getInitials(shop);
+                const markerClass = shop.isPartner ? 'gradient' : 'black';
+                
+                const customIcon = L.divIcon({
+                    html: `<div class="custom-marker ${markerClass}" data-index="${index}">${initials}</div>`,
+                    className: '',
+                    iconSize: [36, 48],
+                    iconAnchor: [18, 48]
+                });
+                
+                const linkUrl = shop.website;
+                
+                const instagramIcon = shop.instagram ? `
+                    <a href="https://instagram.com/${shop.instagram}" target="_blank" rel="noopener noreferrer" class="instagram-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                        </svg>
+                    </a>
+                ` : '';
+                
+                const popupTypeLink = linkUrl ? 
+                    `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer" class="popup-type">${shop.type}</a>` : 
+                    `<span class="popup-type no-link">${shop.type}</span>`;
+                
+                const hoursData = getHoursDisplay(shop);
+                const hoursHTML = hoursData ? `<div class="shop-hours ${hoursData.isOpen ? 'open' : 'closed'}">${hoursData.text}</div>` : '';
+                
+                const marker = L.marker([shop.lat, shop.lng], { icon: customIcon })
+                    .addTo(map)
+                    .bindTooltip(shop.name, {
+                        permanent: false,
+                        direction: 'top',
+                        offset: [0, -20],
+                        className: 'custom-tooltip'
+                    })
+                    .bindPopup(`
+                        <div class="popup-content">
+                            <div class="popup-title">${shop.name}</div>
+                            <div class="popup-address">${shop.address}</div>
+                            ${hoursHTML}
+                            <div class="popup-meta">
+                                ${popupTypeLink}
+                                ${instagramIcon}
+                            </div>
+                            <div class="directions-buttons">
+                                <a href="${googleMapsUrl}" target="_blank" class="dir-btn" rel="noopener noreferrer">Google</a>
+                                <a href="${appleMapsUrl}" target="_blank" class="dir-btn" rel="noopener noreferrer">Apple</a>
+                            </div>
+                        </div>
+                    `, {
+                        closeButton: true,
+                        autoClose: true,
+                        closeOnClick: false
+                    });
+                
+                marker.on('popupopen', () => {
+                    const popup = marker.getPopup();
+                    const popupElement = popup.getElement();
+                    const links = popupElement.querySelectorAll('a');
+                    
+                    links.forEach(link => {
+                        link.addEventListener('click', (e) => {
+                            if (link.href) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                window.open(link.href, '_blank', 'noopener,noreferrer');
+                            }
+                        });
+                    });
+                    
+                    const closeButton = popupElement.querySelector('.leaflet-popup-close-button');
+                    if (closeButton) {
+                        closeButton.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            e.stopImmediatePropagation();
+                            marker.closePopup();
+                            return false;
+                        }, true);
+                    }
+                });
+                
+                markers.push({ marker, shop, index });
+            });
+        }
+
+        // =============================================================
+        // FILTER FUNCTIONALITY
+        // =============================================================
+        function filterCafes(mode) {
+            filterMode = mode;
+            
+            document.querySelectorAll('.stat-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.filter === mode) {
+                    item.classList.add('active');
+                }
+            });
+            
+            markers.forEach(({ marker, shop }) => {
+                if (mode === 'partner') {
+                    if (shop.isPartner) {
+                        marker.addTo(map);
+                    } else {
+                        map.removeLayer(marker);
+                    }
+                } else {
+                    marker.addTo(map);
+                }
+            });
+            
+            if (currentView === 'list') {
+                renderListView();
+            }
+        }
+        
+        document.querySelectorAll('.stat-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const filter = item.dataset.filter;
+                filterCafes(filter);
+            });
+        });
+
+        // =============================================================
+        // VIEW TOGGLE FUNCTIONALITY
+        // =============================================================
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const view = btn.dataset.view;
+                currentView = view;
+                
+                document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const mapEl = document.getElementById('map');
+                const listViewEl = document.getElementById('listView');
+                const aboutViewEl = document.getElementById('aboutView');
+                const joinViewEl = document.getElementById('joinView');
+                
+                mapEl.classList.add('hidden');
+                listViewEl.classList.add('hidden');
+                aboutViewEl.classList.add('hidden');
+                joinViewEl.classList.add('hidden');
+                
+                if (view === 'map') {
+                    mapEl.classList.remove('hidden');
+                    setTimeout(() => map.invalidateSize(), 100);
+                } else if (view === 'list') {
+                    listViewEl.classList.remove('hidden');
+                    renderListView();
+                } else if (view === 'about') {
+                    aboutViewEl.classList.remove('hidden');
+                    renderAboutView();
+                } else if (view === 'join') {
+                    joinViewEl.classList.remove('hidden');
+                    renderJoinView();
+                }
+            });
+        });
+
+        // =============================================================
+        // LIST VIEW RENDER
+        // =============================================================
+        function renderListView(searchQuery = '') {
+            const listContent = document.getElementById('listContent');
+            
+            const filteredShops = coffeeShops.filter(shop => {
+                if (filterMode === 'partner' && !shop.isPartner) {
+                    return false;
+                }
+                
+                if (searchQuery) {
+                    const searchText = `${shop.name} ${shop.address} ${shop.type}`.toLowerCase();
+                    return searchText.includes(searchQuery.toLowerCase());
+                }
+                
+                return true;
+            });
+            
+            filteredShops.sort((a, b) => {
+                if (a.state !== b.state) {
+                    return a.state.localeCompare(b.state);
+                }
+                if (a.city !== b.city) {
+                    return a.city.localeCompare(b.city);
+                }
+                return a.name.localeCompare(b.name);
+            });
+            
+            if (filteredShops.length === 0) {
+                listContent.innerHTML = '<div class="loading-message">No cafes found matching your criteria.</div>';
+                return;
+            }
+            
+            const stateGroups = {};
+            filteredShops.forEach(shop => {
+                const state = shop.state || 'Unknown State';
+                const city = shop.city || 'Unknown City';
+                
+                if (!stateGroups[state]) {
+                    stateGroups[state] = {};
+                }
+                if (!stateGroups[state][city]) {
+                    stateGroups[state][city] = [];
+                }
+                stateGroups[state][city].push(shop);
+            });
+            
+            let html = '';
+            
+            Object.keys(stateGroups).sort().forEach(state => {
+                const stateId = `state-${state}`.replace(/\s+/g, '-');
+                
+                const stateNames = {
+                    'OH': 'Ohio',
+                    'CA': 'California',
+                    'NY': 'New York',
+                    'TX': 'Texas',
+                    'FL': 'Florida',
+                    'IL': 'Illinois',
+                    'PA': 'Pennsylvania',
+                    'MI': 'Michigan',
+                    'WA': 'Washington',
+                    'OR': 'Oregon'
+                };
+                const fullStateName = stateNames[state] || state;
+                
+                html += `
+                    <div class="state-header collapsible" data-state-id="${stateId}">
+                        <h3>${fullStateName}</h3>
+                    </div>
+                    <div class="state-cities" id="${stateId}" style="display: none;">
+                `;
+                
+                const cities = stateGroups[state];
+                Object.keys(cities).sort().forEach(city => {
+                    const cafes = cities[city];
+                    const cityId = `city-${state}-${city}`.replace(/\s+/g, '-');
+                    
+                    html += `
+                        <div class="city-header collapsible" data-city-id="${cityId}" data-parent-state="${stateId}">
+                            <h4>${city}</h4>
+                        </div>
+                        <div class="city-cafes" id="${cityId}" style="display: none;">
+                    `;
+                    
+                    cafes.forEach(shop => {
+                        const actualIndex = coffeeShops.indexOf(shop);
+                        const linkUrl = shop.website;
+                        const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(shop.address)}`;
+                        const appleMapsUrl = `https://maps.apple.com/?daddr=${encodeURIComponent(shop.address)}`;
+                        
+                        const typeLink = linkUrl ? 
+                            `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer" class="shop-type">${shop.type}</a>` : 
+                            `<span class="shop-type no-link">${shop.type}</span>`;
+                        
+                        const instagramIcon = shop.instagram ? `
+                            <a href="https://instagram.com/${shop.instagram}" target="_blank" rel="noopener noreferrer" class="instagram-link">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                                </svg>
+                            </a>
+                        ` : '';
+                        
+                        const spillBadge = shop.isPartner ? 
+                            `<div class="spill-badge">
+                                <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <defs>
+                                        <linearGradient id="spillGradient${actualIndex}" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
+                                            <stop offset="50%" style="stop-color:#9B59B6;stop-opacity:1" />
+                                            <stop offset="100%" style="stop-color:#FF6B9D;stop-opacity:1" />
+                                        </linearGradient>
+                                    </defs>
+                                    <circle cx="12" cy="12" r="11" fill="url(#spillGradient${actualIndex})" stroke="#2C2C2C" stroke-width="1"/>
+                                    <text x="12" y="16" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="white" text-anchor="middle">S</text>
+                                </svg>
+                            </div>` : '';
+                        
+                        html += `
+                            <div class="shop-card">
+                                <div class="shop-name">${shop.name}</div>
+                                <div class="shop-address">${shop.address}</div>
+                                <div class="shop-hours-placeholder" data-shop-index="${actualIndex}"></div>
+                                <div class="shop-meta">
+                                    ${typeLink}
+                                    ${instagramIcon}
+                                    <div class="directions-buttons">
+                                        <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" class="dir-btn">Google</a>
+                                        <a href="${appleMapsUrl}" target="_blank" rel="noopener noreferrer" class="dir-btn">Apple</a>
+                                    </div>
+                                </div>
+                                ${spillBadge}
+                            </div>
+                        `;
+                    });
+                    
+                    html += `</div>`;
+                });
+                
+                html += `</div>`;
+            });
+            
+            listContent.innerHTML = html;
+            
+            setTimeout(() => {
+                document.querySelectorAll('.state-header.collapsible').forEach(header => {
+                    header.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const stateId = header.dataset.stateId;
+                        const stateContainer = document.getElementById(stateId);
+                        
+                        const isExpanded = stateContainer.style.display === 'block';
+                        
+                        document.querySelectorAll('.state-cities').forEach(container => {
+                            container.style.display = 'none';
+                        });
+                        document.querySelectorAll('.state-header.collapsible').forEach(h => {
+                            h.classList.remove('expanded');
+                        });
+                        
+                        if (!isExpanded) {
+                            stateContainer.style.display = 'block';
+                            header.classList.add('expanded');
+                        }
+                    });
+                });
+                
+                document.querySelectorAll('.city-header.collapsible').forEach(header => {
+                    header.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const cityId = header.dataset.cityId;
+                        const parentStateId = header.dataset.parentState;
+                        const cafesContainer = document.getElementById(cityId);
+                        
+                        const isExpanded = cafesContainer.style.display === 'block';
+                        
+                        const parentState = document.getElementById(parentStateId);
+                        if (parentState) {
+                            parentState.querySelectorAll('.city-cafes').forEach(container => {
+                                container.style.display = 'none';
+                            });
+                            parentState.querySelectorAll('.city-header.collapsible').forEach(h => {
+                                h.classList.remove('expanded');
+                            });
+                        }
+                        
+                        if (!isExpanded) {
+                            cafesContainer.style.display = 'block';
+                            header.classList.add('expanded');
+                        }
+                    });
+                });
+                
+                filteredShops.forEach((shop) => {
+                    const actualIndex = coffeeShops.indexOf(shop);
+                    const hoursPlaceholder = listContent.querySelector(`[data-shop-index="${actualIndex}"]`);
+                    if (hoursPlaceholder) {
+                        const hoursData = getHoursDisplay(shop);
+                        if (hoursData) {
+                            const statusClass = hoursData.isOpen ? 'open' : 'closed';
+                            hoursPlaceholder.innerHTML = `<div class="shop-hours ${statusClass}">${hoursData.text}</div>`;
+                        }
+                    }
+                });
+                
+                const listLinks = listContent.querySelectorAll('a');
+                listLinks.forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (link.href) {
+                            e.preventDefault();
+                            window.open(link.href, '_blank', 'noopener,noreferrer');
+                        }
+                    });
+                });
+            }, 0);
+        }
+
+        const listSearchBox = document.getElementById('listSearchBox');
+        listSearchBox.addEventListener('input', (e) => {
+            const query = e.target.value;
+            renderListView(query);
+        });
+
+        // =============================================================
+        // ABOUT VIEW
+        // =============================================================
+        function renderAboutView() {
+            const aboutContent = document.getElementById('aboutContent');
+            
+            aboutContent.innerHTML = `
+                <div class="about-section">
+                    <h2>Our Mission</h2>
+                    <p>Spill Coffee Map exists to help you discover independent coffee shops that prioritize genuine human connection over transactional relationships. We believe coffee culture is about more than just great drinks — it's about the spaces and people that make communities thrive.</p>
+                </div>
+                
+                <div class="about-section">
+                    <h2>What We Look For</h2>
+                    <p>Every cafe on this map has been hand-selected based on our "Culture of Care" philosophy. We feature shops that:</p>
+                    <p>• Create intentional spaces for community connection<br>
+                    • Support independent roasters and sustainable practices<br>
+                    • Employ people who are passionate about craft and hospitality<br>
+                    • Build relationships, not just transactions</p>
+                </div>
+                
+                <div class="about-section">
+                    <h2>Partner Cafes</h2>
+                    <p>Cafes marked with the 
+                        <span style="display: inline-flex; align-items: center; gap: 4px;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
+                                <defs>
+                                    <linearGradient id="spillGradientAbout" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
+                                        <stop offset="50%" style="stop-color:#9B59B6;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#FF6B9D;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                                <circle cx="12" cy="12" r="11" fill="url(#spillGradientAbout)" stroke="#2C2C2C" stroke-width="1"/>
+                                <text x="12" y="16" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="white" text-anchor="middle">S</text>
+                            </svg>
+                            <strong>Spill badge</strong>
+                        </span>
+                    are official Spill Coffee Map partners. These shops have worked directly with us to share their story and support the independent coffee community.</p>
+                </div>
+                
+                <div class="about-section">
+                    <h2>About Spill</h2>
+                    <p>Spill is a coffee culture media brand documenting the cafes, roasters, and people building meaningful community through coffee. Founded by photographer and former cafe owner <a href="https://instagram.com/lukeleffel" target="_blank" rel="noopener noreferrer">Luke Leffel</a>, we're creating a national network of independent coffee spaces worth visiting.</p>
+                    <p>Follow our work at <a href="https://instagram.com/spillcoffeemag" target="_blank" rel="noopener noreferrer">@spillcoffeemag</a> or visit <a href="https://spillcoffeemag.com" target="_blank" rel="noopener noreferrer">spillcoffeemag.com</a></p>
+                </div>
+                
+                <div class="about-section">
+                    <h2>Suggest a Cafe</h2>
+                    <p>Know an independent coffee shop that embodies the Culture of Care? We're always looking to expand our map. <a href="https://forms.gle/your-form-id" target="_blank" rel="noopener noreferrer">Submit a recommendation</a> and help us discover more great coffee.</p>
+                </div>
+                
+                <div class="about-section">
+                    <h2>Partner With Us</h2>
+                    <p>Are you a coffee shop owner, roaster, or brand aligned with independent coffee culture? We'd love to hear from you. Email <a href="mailto:luke@spillcoffeemag.com">luke@spillcoffeemag.com</a> to discuss partnership opportunities.</p>
+                </div>
+            `;
+        }
+
+        // =============================================================
+        // JOIN VIEW
+        // =============================================================
+        function renderJoinView() {
+            const joinContent = document.getElementById('joinContent');
+            
+            joinContent.innerHTML = `
+                <div class="about-section">
+                    <h2>Get Your Spill Keychain</h2>
+                    <p>Show your support for independent coffee culture with the official Spill Coffee Map keychain. Proceeds help us continue documenting and connecting coffee communities across the country.</p>
+                    <p style="margin-top: 20px;">
+                        <a href="https://your-shop-link.com/keychain" target="_blank" rel="noopener noreferrer" class="article-link" style="display: inline-block; padding: 12px 24px; font-size: 12px;">
+                            SHOP KEYCHAINS →
+                        </a>
+                    </p>
+                </div>
+                
+                <div class="about-section">
+                    <h2>Become a Partner Cafe</h2>
+                    <p>Join the growing network of independent cafes featured on Spill Coffee Map. Partner cafes receive:</p>
+                    <p>
+                    • Featured placement with the 
+                        <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle; margin: 0 2px;">
+                            <defs>
+                                <linearGradient id="spillGradientJoin1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
+                                    <stop offset="50%" style="stop-color:#9B59B6;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#FF6B9D;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <circle cx="12" cy="12" r="11" fill="url(#spillGradientJoin1)" stroke="#2C2C2C" stroke-width="1"/>
+                            <text x="12" y="16" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="white" text-anchor="middle">S</text>
+                        </svg>
+                    Spill badge on the map<br>
+                    • Professional photography documentation of your space<br>
+                    • Feature coverage in Spill Coffee Magazine<br>
+                    • Access to our network of coffee enthusiasts nationwide<br>
+                    • Co-marketing opportunities and content collaboration
+                    </p>
+                    <p style="margin-top: 20px;">
+                        <a href="https://forms.gle/your-partner-form-id" target="_blank" rel="noopener noreferrer" class="article-link" style="display: inline-block; padding: 12px 24px; font-size: 12px;">
+                            APPLY TO PARTNER →
+                        </a>
+                    </p>
+                </div>
+                
+                <div class="about-section">
+                    <h2>Partnership Investment</h2>
+                    <p>Our partnership model is designed to be accessible for independent cafes while supporting our mission of documenting coffee culture nationwide.</p>
+                    <p><strong>Annual Partnership:</strong> $500/year includes badge placement, photography session, and feature story in Spill Coffee Magazine.</p>
+                    <p><strong>Local Sponsorship:</strong> Custom packages available for roasters, equipment brands, and coffee-aligned businesses starting at $1,000.</p>
+                    <p style="margin-top: 16px; font-size: 13px; opacity: 0.8;">Questions? Email <a href="mailto:luke@spillcoffeemag.com">luke@spillcoffeemag.com</a></p>
+                </div>
+                
+                <div class="about-section">
+                    <h2>Why Partner With Spill?</h2>
+                    <p>We're not another directory service. Spill is a media brand built by someone who understands independent coffee from the inside — as a photographer, former cafe owner, and longtime industry participant.</p>
+                    <p>Every partner cafe is personally vetted and photographed. Your story is told with care, not just listed in a database. You're joining a curated community of cafes that share your values around quality, craft, and connection.</p>
+                </div>
+            `;
+        }
+
+        // =============================================================
+        // MAP SEARCH FUNCTIONALITY
+        // =============================================================
+        const mapSearchToggle = document.getElementById('mapSearchToggle');
+        const mapSearchInput = document.getElementById('mapSearchInput');
+        
+        mapSearchToggle.addEventListener('click', () => {
+            mapSearchInput.classList.toggle('active');
+            if (mapSearchInput.classList.contains('active')) {
+                mapSearchInput.focus();
+            } else {
+                mapSearchInput.value = '';
+                markers.forEach(({ marker }) => {
+                    marker.setOpacity(0.9);
+                });
+            }
+        });
+        
+        mapSearchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            
+            if (!query) {
+                markers.forEach(({ marker }) => {
+                    marker.setOpacity(0.9);
+                });
+                return;
+            }
+            
+            markers.forEach(({ marker, shop }) => {
+                const searchText = `${shop.name} ${shop.address} ${shop.type}`.toLowerCase();
+                if (searchText.includes(query)) {
+                    marker.setOpacity(1);
+                } else {
+                    marker.setOpacity(0.2);
+                }
+            });
+        });
+
+        mapSearchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const query = e.target.value.toLowerCase();
+                if (!query) return;
+                
+                const firstMatch = markers.find(({ shop }) => {
+                    const searchText = `${shop.name} ${shop.address} ${shop.type}`.toLowerCase();
+                    return searchText.includes(query);
+                });
+                
+                if (firstMatch) {
+                    map.setView([firstMatch.shop.lat, firstMatch.shop.lng], 15, {
+                        animate: true,
+                        duration: 0.5
+                    });
+                }
+            }
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.map-search-container')) {
+                mapSearchInput.classList.remove('active');
+                mapSearchInput.value = '';
+                markers.forEach(({ marker }) => {
+                    marker.setOpacity(0.9);
+                });
+            }
+        });
+
+        // =============================================================
+        // INITIALIZE ON PAGE LOAD
+        // =============================================================
+        loadCafeData();
+    </script>
+    <script>
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("service-worker.js");
+        }
+    </script>
+</body>
+</html>
