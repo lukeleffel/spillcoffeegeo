@@ -1311,9 +1311,6 @@
                     const lng = position.coords.longitude;
                     userLocation = { lat, lng };
                     
-                    // Store in localStorage
-                    localStorage.setItem('lastMapPosition', JSON.stringify({ lat, lng }));
-                    
                     // Add/update user location marker
                     showUserLocation(lat, lng);
                     
@@ -1356,23 +1353,8 @@
         }
 
         function initializeMapPosition() {
-            // Try to get last position from localStorage
-            const lastPosition = localStorage.getItem('lastMapPosition');
-            
-            if (lastPosition) {
-                try {
-                    const pos = JSON.parse(lastPosition);
-                    map.setView([pos.lat, pos.lng], 13);
-                    showUserLocation(pos.lat, pos.lng);
-                    userLocation = pos;
-                } catch (e) {
-                    // If parsing fails, try to get user location
-                    tryGetUserLocation();
-                }
-            } else {
-                // No stored position, try to get current location
-                tryGetUserLocation();
-            }
+            // Always try to get user's current location
+            tryGetUserLocation();
         }
 
         function tryGetUserLocation() {
@@ -1388,7 +1370,6 @@
                     const lng = position.coords.longitude;
                     userLocation = { lat, lng };
                     
-                    localStorage.setItem('lastMapPosition', JSON.stringify({ lat, lng }));
                     showUserLocation(lat, lng);
                     map.setView([lat, lng], 13);
                 },
@@ -1402,17 +1383,6 @@
 
         // Location button click handler
         document.getElementById('locationButton').addEventListener('click', getUserLocation);
-
-        // Save map position when user moves map
-        function saveMapPosition() {
-            if (map) {
-                const center = map.getCenter();
-                localStorage.setItem('lastMapPosition', JSON.stringify({
-                    lat: center.lat,
-                    lng: center.lng
-                }));
-            }
-        }
 
         // =============================================================
         // CSV PARSING FUNCTIONS
@@ -1624,9 +1594,6 @@
 
             // Initialize map position with geolocation
             initializeMapPosition();
-            
-            // Save position when map is moved
-            map.on('moveend', saveMapPosition);
 
             createMarkers();
         }
